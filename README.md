@@ -1,18 +1,60 @@
-# mpv-winbuild
+# mpv-winbuild-arm64
 
 [![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/zhongfly/mpv-winbuild/mpv.yml?branch=main)](https://github.com/zhongfly/mpv-winbuild/actions)
 [![releases](https://img.shields.io/github/v/release/zhongfly/mpv-winbuild)](https://github.com/zhongfly/mpv-winbuild/releases/latest)
 [![downloads](https://img.shields.io/github/downloads/zhongfly/mpv-winbuild/total)](https://github.com/zhongfly/mpv-winbuild/releases)
 
-Use Github Action to build mpv for Windows with latest commit.
+Use Github Action to build apps for Windows with latest commit.
 
-Based on <https://github.com/shinchiro/mpv-winbuild-cmake>.
+- mpv (with libsixel)
+- mpv-menu-plugin
+- mpv-debug-plugin
+- ffmpeg (with frei0r, vmaf, opencl)
+- aria2
+- curl
+- mediainfo
+- libmediainfo
+- openssl
+- x265
+- svtav1
+- svtav1-psy (with libdovi, libhdr10plus)
+- zstd
+- telegram-bot-api
+- qBittorrent-Enhanced-Edition
+
+> [!NOTE]
+> x86-64-v3 version is built with PGO + LLVM Polly and mimalloc to improve overall performance.
+>
+> x86-64 build is integrated with mimalloc by default, but aarch64 build needs to run [minject-arm64](https://github.com/microsoft/mimalloc/tree/dev-slice/bin) manually, otherwise it will still use the system malloc.
+>
+> libmpv can't use mimalloc, the only alternative is system-wide Segment Heap:
+> ```
+> reg add “HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Segment Heap” /v Enabled /t REG_DWORD /d 1 /f
+> ```
+> The mpv is built with consoleAllocationPolicy, so make sure to use Windows 11 24H2 or higher otherwise you will see a console when starting mpv.
+>
+> qBittorrent-Enhanced-Edition is built with Qt main branch so it might be unstable.
+>
+> The profdata used by PGO is generated manually, so it usually only scrolls every few weeks, during which time there might be random performance regressions.
+>
+> If LargePages support is enabled on your system, mimalloc will automatically use it, and you can also enable LargePages for exe:
+> ```
+> reg add “HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\mpv.exe” /v UseLargePages /t REG_DWORD /d 1 /f
+> ```
+> You can use [VMMap](https://learn.microsoft.com/en-us/sysinternals/downloads/vmmap) to check if LargePages works or is a placebo.
+>
+> Private Data Locked WS are LargePages explicitly allocated by mimalloc via VirtualAlloc API.
+>
+> Image Locked WS are LargePages coalesced by NT kernel for exe.
+> Somehow usually only MinGW built exe can get multiple coalesced Image LargePages, the only exception is Telegram.
+
+Based on <https://github.com/Andarwinux/mpv-winbuild-cmake>.
 
 ## Auto-Builds
 
 Checks the mpv repository every hour for updates. If there is an update and it is relevant to the windows build, it will automatically run the compilation and **release it on success**.
 
-This repo only provides 64-bit version. If you need a 32-bit version, you can fork this repo and run `MPV` workflow by yourself.
+This repo only provides x86-64-v3 and aarch64 version. If you need a 32-bit version, you can fork this repo and run `MPV` workflow by yourself.
 
 > [!NOTE]
 > `mpv-dev-xxxx.7z` is libmpv, including the `libmpv-2.dll` file.
